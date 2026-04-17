@@ -24,7 +24,10 @@ body {
   background-color: var(--bg-color);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
-  padding-bottom: 120px; /* Space for FAB and Bottom Nav */
+  /* Espaço para o FAB e Bottom Nav + área segura inferior do iPhone */
+  padding-bottom: calc(120px + env(safe-area-inset-bottom));
+  /* Área segura superior do iPhone (notch / dynamic island) */
+  padding-top: env(safe-area-inset-top);
   line-height: 1.4;
 }
 
@@ -406,7 +409,7 @@ body {
 /* FAB */
 .fab-container {
   position: fixed;
-  bottom: 80px; /* shifted up for bottom nav */
+  bottom: calc(80px + env(safe-area-inset-bottom)); /* shifted up for bottom nav + safe area */
   left: 0;
   right: 0;
   display: flex;
@@ -711,7 +714,7 @@ body {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding: 8px 0 16px 0;
+  padding: 8px 0 calc(16px + env(safe-area-inset-bottom)) 0;
   border-top: 1px solid var(--border-color);
   z-index: 900;
   box-shadow: 0 -2px 10px rgba(0,0,0,0.02);
