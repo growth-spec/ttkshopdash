@@ -13,6 +13,7 @@ export default function AdminPage() {
   const [storageMode, setStorageMode] = useState(null);
   const indexFrameRef = useRef(null);
   const dataFrameRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // ==========================================================
   // Carregar dados iniciais
@@ -83,32 +84,50 @@ export default function AdminPage() {
   };
 
   // ==========================================================
-  // Submit — salva no servidor
+  // Submit — salva no servidor (dados + imagem)
   // ==========================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaveState({ status: 'saving', message: '' });
 
     try {
-      const res = await fetch('/api/data', {
+      // 1) Salvar os dados (números) no Redis
+      const dataRes = await fetch('/api/data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      const result = await res.json();
+      const dataResult = await dataRes.json();
 
-      if (result.success) {
-        setSaveState({
-          status: 'success',
-          message: `Salvo com sucesso! (modo: ${result.mode})`
-        });
-        // Recarrega iframes para refletir o salvamento
-        if (indexFrameRef.current) indexFrameRef.current.src = '/?t=' + Date.now();
-        if (dataFrameRef.current) dataFrameRef.current.src = '/data?t=' + Date.now();
-        setTimeout(() => setSaveState({ status: 'idle', message: '' }), 3000);
-      } else {
-        setSaveState({ status: 'error', message: result.error || 'Erro desconhecido' });
+      if (!dataResult.success) {
+        throw new Error(dataResult.error || 'Erro ao salvar dados');
       }
+
+      // 2) Se há imagem selecionada, fazer upload para o Blob
+      const imgFile = fileInputRef.current?.files?.[0];
+      if (imgFile) {
+        const formData = new FormData();
+        formData.append('image', imgFile);
+
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const uploadResult = await uploadRes.json();
+
+        if (!uploadResult.success) {
+          throw new Error(uploadResult.error || 'Erro ao fazer upload da imagem');
+        }
+      }
+
+      setSaveState({
+        status: 'success',
+        message: `Salvo com sucesso! (modo: ${dataResult.mode})`
+      });
+      // Recarrega iframes para refletir o salvamento
+      if (indexFrameRef.current) indexFrameRef.current.src = '/?t=' + Date.now();
+      if (dataFrameRef.current) dataFrameRef.current.src = '/data?t=' + Date.now();
+      setTimeout(() => setSaveState({ status: 'idle', message: '' }), 3000);
     } catch (err) {
       setSaveState({ status: 'error', message: err.message });
     }
@@ -124,7 +143,7 @@ export default function AdminPage() {
           <h1>Painel Admin</h1>
           {storageMode && (
             <span className={'storage-badge ' + storageMode}>
-              {storageMode === 'kv' ? 'Vercel KV' : 'arquivo local'}
+              {storageMode === 'redis' ? 'Upstash Redis' : 'arquivo local'}
             </span>
           )}
           <button className="exit-btn" onClick={() => router.push('/')}>Sair</button>
@@ -201,7 +220,7 @@ export default function AdminPage() {
             {/* Imagem */}
             <hr className="section-separator" />
             <h3 className="section-title">📷 Imagem do Diagnóstico (apenas preview)</h3>
-            <input type="file" accept="image/*" className="file-input" onChange={onImageChange} />
+            <input ref={fileInputRef} type="file" accept="image/*" className="file-input" onChange={onImageChange} />
 
             <button
               type="submit"
@@ -290,7 +309,7 @@ const adminStyles = `
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
-  .storage-badge.kv { background: #e0e7ff; color: #3730a3; }
+  .storage-badge.redis { background: #e0e7ff; color: #3730a3; }
   .storage-badge.file { background: #fef3c7; color: #92400e; }
 
   .form-content { padding: 20px; flex: 1; }
