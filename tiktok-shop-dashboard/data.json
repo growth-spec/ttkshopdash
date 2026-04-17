@@ -1,0 +1,26 @@
+{
+  "today": {
+    "gmv":             { "current": 5100,    "previous": 4200 },
+    "items_sold":      { "current": 145,     "previous": 120 },
+    "est_commission":  { "current": 780,     "previous": 650 },
+    "commission_base": { "current": 3500,    "previous": 2900 },
+    "product_views":   { "current": 123800,  "previous": 98000 },
+    "product_clicks":  { "current": 8900,    "previous": 7200 }
+  },
+  "yesterday": {
+    "gmv":             { "current": 4200,    "previous": 4100 },
+    "items_sold":      { "current": 120,     "previous": 115 },
+    "est_commission":  { "current": 650,     "previous": 620 },
+    "commission_base": { "current": 2900,    "previous": 2850 },
+    "product_views":   { "current": 98000,   "previous": 95000 },
+    "product_clicks":  { "current": 7200,    "previous": 7000 }
+  },
+  "last_7_days": {
+    "gmv":             { "current": 35000,   "previous": 28000 },
+    "items_sold":      { "current": 920,     "previous": 750 },
+    "est_commission":  { "current": 5400,    "previous": 4100 },
+    "commission_base": { "current": 22000,   "previous": 17500 },
+    "product_views":   { "current": 850000,  "previous": 620000 },
+    "product_clicks":  { "current": 58000,   "previous": 41000 }
+  }
+}
