@@ -19,7 +19,7 @@ export default function DataPage() {
       .then(res => res.json())
       .then(data => {
         setAllData(data);
-        if (data.image_url) setDiagnosisImg(data.image_url);
+        if (data.diagnosis_image_url) setDiagnosisImg(data.diagnosis_image_url);
       })
       .catch(err => console.error(err));
   }, []);
