@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronDown, Info, LineChart, ChevronRight } from 'lucide-react';
 import { calculateTrend, formatByType } from '@/lib/format';
 import { METRICS } from '@/lib/constants';
-import { BottomNav } from '../page';
+import BottomNav from '@/app/components/BottomNav';
 
 export default function DataPage() {
   const router = useRouter();
