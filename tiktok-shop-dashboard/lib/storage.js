@@ -1,9 +1,13 @@
 /**
  * Camada de armazenamento.
- * - Em produção (Vercel) usa Vercel KV (banco Redis).
- * - Em dev local, lê/grava no arquivo data.json.
+ * - Em produção (Vercel) usa Upstash Redis via @upstash/redis
+ * - Em dev local, lê/grava no arquivo data.json
  *
  * Detecta automaticamente qual usar via variáveis de ambiente.
+ *
+ * As variáveis KV_REST_API_URL e KV_REST_API_TOKEN são injetadas
+ * automaticamente pela Vercel quando você instala a integração
+ * "Upstash Redis" pelo Marketplace.
  */
 
 import fs from 'node:fs/promises';
@@ -12,10 +16,10 @@ import path from 'node:path';
 const KEY = 'dashboard_data';
 const DATA_FILE = path.join(process.cwd(), 'data.json');
 
-// Detecta se Vercel KV está configurado (variáveis injetadas pela Vercel)
-const KV_ENABLED = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+// Detecta se Upstash Redis está configurado
+const REDIS_ENABLED = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
 
-// Cache em memória do default (lido do arquivo do projeto)
+// Cache em memória do default
 let defaultCache = null;
 async function getDefault() {
   if (defaultCache) return defaultCache;
@@ -28,21 +32,33 @@ async function getDefault() {
   return defaultCache;
 }
 
+// Cliente Upstash (lazy)
+let _redis = null;
+async function getRedis() {
+  if (_redis) return _redis;
+  const { Redis } = await import('@upstash/redis');
+  _redis = new Redis({
+    url: process.env.KV_REST_API_URL,
+    token: process.env.KV_REST_API_TOKEN
+  });
+  return _redis;
+}
+
 // ============================================================
 // LEITURA
 // ============================================================
 export async function readData() {
-  if (KV_ENABLED) {
+  if (REDIS_ENABLED) {
     try {
-      const { kv } = await import('@vercel/kv');
-      const stored = await kv.get(KEY);
+      const redis = await getRedis();
+      const stored = await redis.get(KEY);
       if (stored) return stored;
-      // Primeira execução — semeia o KV com o default
+      // Primeira execução — semeia o Redis com o default
       const seed = await getDefault();
-      await kv.set(KEY, seed);
+      await redis.set(KEY, seed);
       return seed;
     } catch (err) {
-      console.error('[storage] Erro ao ler KV, caindo para arquivo:', err);
+      console.error('[storage] Erro ao ler Redis, caindo para arquivo:', err);
       return await getDefault();
     }
   }
@@ -60,10 +76,10 @@ export async function readData() {
 // ESCRITA
 // ============================================================
 export async function writeData(data) {
-  if (KV_ENABLED) {
-    const { kv } = await import('@vercel/kv');
-    await kv.set(KEY, data);
-    return { mode: 'kv' };
+  if (REDIS_ENABLED) {
+    const redis = await getRedis();
+    await redis.set(KEY, data);
+    return { mode: 'redis' };
   }
 
   // Modo dev/local — escreve no arquivo
@@ -75,5 +91,5 @@ export async function writeData(data) {
 // FLAG ÚTIL PRA DEBUG
 // ============================================================
 export function getStorageMode() {
-  return KV_ENABLED ? 'kv' : 'file';
+  return REDIS_ENABLED ? 'redis' : 'file';
 }
